@@ -2,8 +2,20 @@
     padding: 20px 0
 }
 
+.Cat {
+    padding: 20px 0
+}
+
 div {
     .container {
         max-width: 1140px;
+    }
+}
+
+.Home {
+    .card {
+        .link-button {
+            width: 100%;
+        }
     }
 }

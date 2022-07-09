@@ -14,5 +14,5 @@ export const CLIENT_URL = 'http://localhost:3000';
 export const API_SERVER_URL = 'https://api.thecatapi.com/v1';
 
 export const API_REQUEST_HEADER = {
-    "x-api-key": '8da39b7b-dbe6-481f-8d03-b0f43257d62f'
+    "x-api-key": API_KEY
 };
