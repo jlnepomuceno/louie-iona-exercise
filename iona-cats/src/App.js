@@ -11,8 +11,8 @@ import {
   Route
 } from "react-router-dom";
 
-import Home from "./components/Home";
-import Cat from "./components/Cat";
+import Home from "./pages/Home";
+import Cat from "./pages/Cat";
 
 export default function App() {
   React.useEffect(() => {
