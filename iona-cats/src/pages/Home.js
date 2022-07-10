@@ -1,5 +1,4 @@
 import React from "react";
-import axios from "axios";
 
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -7,97 +6,48 @@ import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 
-import { API_SERVER_URL, API_REQUEST_HEADER } from "../config/config";
 import CatList from "../components/CatList";
 import { useSearchParams } from "react-router-dom";
+import { requestCatBreeds, requestCatImagesPerBreed, requestMoreCatImagesPerBreed } from "../api/CatsAPI";
 
 export default function Home() {
   const [searchParams] = useSearchParams();
-
-  const [selectedBreed, setSelectedBreed] = React.useState(null);
+  const [selectedBreed, setSelectedBreed] = React.useState("-");
   const [breeds, setBreeds] = React.useState([]);
   const [cats, setCats] = React.useState([]);
   const [isLoadingCats, setIsLoadingCats] = React.useState(false);
   const [canLoadMore, setCanLoadMore] = React.useState(true);
   const [pageCount, setPageCount] = React.useState(1);
 
+  // Call API request to get the breeds
+  // for the select input box 
   const getBreedsList = () => {
-    axios
-      .get(`${API_SERVER_URL}/breeds`, API_REQUEST_HEADER)
-      .then((response) => {
-        setBreeds(response.data);
-      })
-      .catch((error) => {
-        console.log(
-          `Error in getting cats from the database: ${error.code} | ${error.message}`
-        );
-        alert(
-          "Apologies but we could not load new cats for you at this time! Miau!"
-        );
-      });
+    requestCatBreeds((data) => {
+      setBreeds(data);
+    });
   };
 
-  const getCatsAccordingToBreed = (breed) => {
+  // Clear the CatList component before Calling API request 
+  // to get new cat images for the CatList component
+  const getCatsAccordingToBreed = (breed_id) => {
     setCats([]);
+    if (breed_id === "-") return;
     setIsLoadingCats(true);
-    axios
-      .get(
-        `${API_SERVER_URL}/images/search?page=1&limit=10&breed_id=${breed}`,
-        API_REQUEST_HEADER
-      )
-      .then((response) => {
-        setIsLoadingCats(false);
-        setCats(response.data);
-      })
-      .catch((error) => {
-        console.log(
-          `Error in getting cats from the database: ${error.code} | ${error.message}`
-        );
-        alert(
-          "Apologies but we could not load new cats for you at this time! Miau!"
-        );
-      });
+    requestCatImagesPerBreed(breed_id, (data) => { // Callbacks to return data from API request
+      setIsLoadingCats(false);
+      setCats(data);
+    });
   };
 
-  const getMoreCats = (breed, page, callback) => {
+  // Calling API request to get more cat images for 
+  // the CatList component
+  const getMoreCats = (breed_id, page, callback) => {
     setIsLoadingCats(true);
-    axios
-      .get(
-        `${API_SERVER_URL}/images/search?page=${page}&limit=10&breed_id=${breed}`,
-        API_REQUEST_HEADER
-      )
-      .then((response) => {
-        setIsLoadingCats(false);
-        callback(response.data);
-      })
-      .catch((error) => {
-        console.log(
-          `Error in getting cats from the database: ${error.code} | ${error.message}`
-        );
-        alert(
-          "Apologies but we could not load new cats for you at this time! Miau!"
-        );
-      });
+    requestMoreCatImagesPerBreed(breed_id, page, (data) => {
+      setIsLoadingCats(false);
+      callback(data);
+    });  // Callbacks to return data from API request
   };
-
-  // Prepare the Breed selection from the Cats API
-  React.useEffect(() => {
-    getBreedsList();
-  }, []);
-
-  // Prepare list of cats from results of the Cats API
-  React.useEffect(() => {
-    console.log("ranning");
-    getCatsAccordingToBreed(selectedBreed);
-  }, [selectedBreed]);
-
-  // Listen for any changes in the breed search queries
-  // and set as the selected breed e.g. coming
-  // back from the Cat page
-  React.useEffect(() => {
-    const search = searchParams.get("breed");
-    if (search) setSelectedBreed(search);
-  }, [searchParams]);
 
   // Event-Handler for Select Input changes
   const handleSelectBreed = ({ target: { value } }) => {
@@ -106,17 +56,7 @@ export default function Home() {
     setSelectedBreed(value);
   };
 
-  // Sub-render the loaded cat results for clarity
-  const renderResults = () => {
-    if (cats.length === 0)
-      return (
-        <Col xs={12} style={{ marginBottom: "20px" }}>
-          No cats available
-        </Col>
-      );
-    return <CatList cats={cats} />;
-  };
-
+  // Handles onClick of Load more...
   const handleLoadMore = (e) => {
     e.preventDefault();
     const newPage = pageCount + 1;
@@ -136,11 +76,38 @@ export default function Home() {
     });
   };
 
+  // Get SelectInput data
+  React.useEffect(() => {
+    getBreedsList();
+  }, []);
+
+  // Update the CatList when new breed is selected
+  React.useEffect(() => {
+    getCatsAccordingToBreed(selectedBreed);
+  }, [selectedBreed]);
+
+  // Listen for any changes in the breed search queries
+  React.useEffect(() => {
+    const search = searchParams.get("breed");
+    if (search) setSelectedBreed(search);
+  }, [searchParams]);
+
+  // Sub-render the loaded cat results for clarity
+  const renderResults = () => {
+    if (cats.length === 0)
+      return (
+        <Col xs={12} style={{ marginBottom: "20px" }}>
+          No cats available
+        </Col>
+      );
+    return <CatList cats={cats} />;
+  };
+
   return (
-    <div class="Home">
+    <div class="home">
       <Container>
         <h1>Cat Browser</h1>
-        <Row style={{ padding: "10px 0px" }}>
+        <Row style={{ padding: '10px 0' }}>
           <Col md={3} sm={6} xs={12}>
             <Form.Group className="mb-3">
               <Form.Label>Breed</Form.Label>
@@ -149,7 +116,7 @@ export default function Home() {
                 value={selectedBreed}
                 onChange={handleSelectBreed}
               >
-                <option value>Select breed</option>
+                <option value="-">Select breed</option>
                 {breeds.map((row) => (
                   <option value={row.id}>{row.name}</option>
                 ))}
@@ -166,7 +133,7 @@ export default function Home() {
               variant="success"
               style={{ backgroundColor: "#28a745", borderColor: "#28a745" }}
               onClick={handleLoadMore}
-              disabled={isLoadingCats}
+              disabled={selectedBreed === "-" || isLoadingCats}
               hidden={!canLoadMore}
             >
               {isLoadingCats ? "Loading cats..." : "Load more"}
